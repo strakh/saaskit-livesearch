@@ -2,7 +2,10 @@ from django.db import models
 import django_pipes as pipes
 from django.conf import settings
 from django.contrib.auth.models import User
-from muaccounts.models import MUAccount
+try:
+  from muaccounts.models import MUAccount
+except:
+  MUAccount = None
 
 class BaseSearch:
     # override it for custom fetch
@@ -103,19 +106,31 @@ class YqlSearch(PipeSearch):
         return res
 
 class GoogleSearch(PipeSearch):
-    uri = "http://ajax.googleapis.com/ajax/services/search/web"
+    uri = "https://www.googleapis.com/customsearch/v1"
 
     def init_options(self):
         super(GoogleSearch, self).init_options()
-        self.options.update({'v':1.0})
+        self.options.update({
+          'alt':'json',
+          'key': settings.GOOGLE_APIKEY,
+          'cx': settings.GOOGLE_CSE_ID,
+        })
     
     def set_query(self, query):
         self.options.update({'q':query})
 
+    def set_count(self, count=10):
+        self.count = count
+        self.options.update({'num':count})
+
+    def set_offset(self, offset=0):
+        offset = int(offset)
+        self.options.update({'start':offset+1})
+
     def get_result(self, response):
         res = dict()
-        if response and hasattr(response, "responseData") and hasattr(response.responseData, "results"):
-            res.update({'google':response.responseData.results,})
+        if response and hasattr(response, "items") and "items" in response.items:
+            res.update({'google':response.items['items'],})
         return res
 
 class TwitterSearch(PipeSearch):
@@ -504,7 +519,8 @@ class AdvancedSearch(models.Model):
     
     count = models.PositiveSmallIntegerField(choices = COUNT_CHOICE)
     market = models.CharField(max_length=5, choices = MARKETS)
-    muaccount = models.ForeignKey(MUAccount)
+    if MUAccount:
+        muaccount = models.ForeignKey(MUAccount)
 
 class SearchApi(models.Model):
     SEARCH_MODELS = (
@@ -520,7 +536,8 @@ class SearchApi(models.Model):
     )
     name = models.CharField(max_length=255)
     slug = models.SlugField(unique=True)
-    muaccount = models.ManyToManyField(MUAccount, blank=True, null=True, related_name='searchapis')
+    if MUAccount:
+        muaccount = models.ManyToManyField(MUAccount, blank=True, null=True, related_name='searchapis')
     search_model = models.CharField(max_length=255, choices = SEARCH_MODELS)
 
     def __unicode__(self):
