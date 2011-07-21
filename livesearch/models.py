@@ -113,7 +113,7 @@ class GoogleSearch(PipeSearch):
         self.options.update({
           'alt':'json',
           'key': settings.GOOGLE_APIKEY,
-          'cx':'settings.GOOGLE_CSE_ID,
+          'cx': settings.GOOGLE_CSE_ID,
         })
     
     def set_query(self, query):
