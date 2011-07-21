@@ -68,7 +68,7 @@ class PipeSearch(BaseSearch, pipes.Pipe):
         if adult:
             self.set_adult(adult)
 
-        return self.fetch_with_options(self.options).items
+        return self.fetch_with_options(self.options)
 
     def fetch_with_options(self, options):
         resp = self.objects.get(options)
@@ -129,8 +129,8 @@ class GoogleSearch(PipeSearch):
 
     def get_result(self, response):
         res = dict()
-        if response and "items" in response:
-            res.update({'google':response['items'],})
+        if response and hasattr(response, "items") and "items" in response.items:
+            res.update({'google':response.items['items'],})
         return res
 
 class TwitterSearch(PipeSearch):
